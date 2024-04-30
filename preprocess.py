@@ -29,9 +29,9 @@ testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
 valDS = FloodDataset(imagePaths=val_imagePaths, maskPaths=val_maskPaths,
 		     transforms=transforms)
 
-with open('PickleDumps/train_pickle.pickle', 'wb') as train_file:
+with open('PickleDumps/train_pickle', 'wb') as train_file:
 	pickle.dump(trainDS, train_file)
-with open('PickleDumps/val_pickle.pickle', 'wb') as val_file:
+with open('PickleDumps/val_pickle', 'wb') as val_file:
 	pickle.dump(valDS, val_file)
-with open('PickleDumps/test_pickle.pickle', 'wb') as test_file:
+with open('PickleDumps/test_pickle', 'wb') as test_file:
 	pickle.dump(testDS, test_file)
