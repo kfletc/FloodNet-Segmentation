@@ -2,7 +2,7 @@
 # contains classes defining the network model
 # defines forward pass through network
 
-from . import config
+import config
 
 import torch
 import torch.nn as nn
@@ -18,7 +18,7 @@ class Block(nn.Module):
     def forward(self, x):
         # foward pass through a block
         return f.relu(self.conv2(f.relu(self.conv1(x))))
-class SegmentationNet(nn.Module):
+class FloodNet(nn.Module):
     def __init__(self, num_classes=10, retain_dim=True, out_size=(config.INPUT_IMAGE_HEIGHT, config.INPUT_IMAGE_WIDTH)):
         super().__init__()
 

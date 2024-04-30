@@ -1,6 +1,7 @@
 # import the necessary pachages
 from dataset import FloodDataset
 import config
+from model import FloodNet
 # loss function
 from torch.optim import Adam
 from torch.utils.data import DataLoader
@@ -58,16 +59,16 @@ print(f"[INFO] found {len(valDS)} examples in the val set...")
 # create the training, test, and val data loaders
 trainLoader = DataLoader(trainDS, shuffle=True,
 			 batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
-			 num_workers=os.cpu_count())
+			 num_workers=0)
 testLoader = DataLoader(testDS, shuffle=False,
 			 batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
-			 num_workers=os.cpu_count())
+			 num_workers=0)
 valLoader = DataLoader(valDS, shuffle=False,
 			 batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
-			 num_workers=os.cpu_count())
+			 num_workers=0)
 
 # initialize UNet model
-##unet = UNet().to(config.DEVICE)
+unet = FloodNet().to(config.DEVICE)
 
 # initialize loss function and optimizer
 ##lossFunc = 
@@ -88,7 +89,7 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 	print(f"[INFO] starting epochs {e}")
 
 	# set the model in training mode
-	##unet.train()
+	unet.train()
 
 	# initialize the total training and validation loss
 	totalTrainLoss = 0
@@ -101,7 +102,7 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 		(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
 		# preform a forward pass and calculate the training loss
-		##pred = unet(x)
+		pred = unet(x)
 		##loss = lossFunc(pred, y)
 
 		# first, zero out any previously accumulated gradients, then
@@ -116,7 +117,7 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 	# switch off autograd
 	with torch.no_grad():
 		# set model in evaluation mode
-		##unet.eval()
+		unet.eval()
 
 		# loop over the validation set
 		for (x, y) in valLoader:
@@ -125,7 +126,7 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 			(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
 			# make the predictions and calculate the validation loss
-			##pred = unet(x)
+			pred = unet(x)
 			##totalValLoss += lossFunc(pred, y)
 
 	# calculate teh average training and validation loss
