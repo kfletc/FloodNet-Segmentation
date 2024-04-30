@@ -16,18 +16,23 @@ val_imagePaths = sorted(list(paths.list_images(config.IMAGE_VAL_DATASET_PATH)))
 val_maskPaths = sorted(list(paths.list_images(config.MASK_VAL_DATASET_PATH)))
 
 # define transformations
-transforms = transforms.Compose([transforms.ToPILImage(),
+transforms_image = transforms.Compose([transforms.ToPILImage(),
 			       transforms.Resize((config.INPUT_IMAGE_HEIGHT,
 						  config.INPUT_IMAGE_WIDTH)),
 			       transforms.ToTensor()])
 
+transforms_mask = transforms.Compose([transforms.ToPILImage(),
+			       transforms.Resize((config.INPUT_IMAGE_HEIGHT,
+						  config.INPUT_IMAGE_WIDTH)),
+			       transforms.PILToTensor()])
+
 # create the datasets
 trainDS = FloodDataset(imagePaths=train_imagePaths, maskPaths=train_maskPaths,
-		       transforms=transforms)
+		       transforms=transforms_image, transforms_mask=transforms_mask)
 testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
-		      transforms=transforms)
+		      transforms=transforms_image, transforms_mask=transforms_mask)
 valDS = FloodDataset(imagePaths=val_imagePaths, maskPaths=val_maskPaths,
-		     transforms=transforms)
+		     transforms=transforms_image, transforms_mask=transforms_mask)
 
 with open('PickleDumps/train_pickle', 'wb') as train_file:
 	pickle.dump(trainDS, train_file)

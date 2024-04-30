@@ -1,21 +1,24 @@
 # import the necessary packages
 from torch.utils.data import Dataset
+from torch import Tensor
+import torch
 import cv2
 from tqdm.auto import tqdm
 
 class FloodDataset(Dataset):
-	def __init__(self, imagePaths, maskPaths, transforms):
+	def __init__(self, imagePaths, maskPaths, transforms, transforms_mask):
 		self.imagePaths = imagePaths
 		self.maskPaths = maskPaths
 		self.transforms = transforms
+		self.transforms_mask = transforms_mask
 		self.data = []
 		for imagePath, maskPath in tqdm(zip(self.imagePaths, self.maskPaths)):
 			image = cv2.imread(imagePath)
-			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 			mask = cv2.imread(maskPath, 0)
 			if self.transforms is not None:
 				image = self.transforms(image)
-				mask = self.transforms(mask)
+				mask = self.transforms_mask(mask)
+			mask = mask.to(torch.long)
 			self.data.append((image, mask))
 
 	def __len__(self):

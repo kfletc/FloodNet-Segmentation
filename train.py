@@ -4,11 +4,13 @@ import config
 from model import FloodNet
 # loss function
 from torch.optim import Adam
+from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from imutils import paths
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import time
 import os
@@ -23,10 +25,15 @@ val_imagePaths = sorted(list(paths.list_images(config.IMAGE_VAL_DATASET_PATH)))
 val_maskPaths = sorted(list(paths.list_images(config.MASK_VAL_DATASET_PATH)))
 
 # define transformations
-transforms = transforms.Compose([transforms.ToPILImage(),
+transforms_image = transforms.Compose([transforms.ToPILImage(),
 			       transforms.Resize((config.INPUT_IMAGE_HEIGHT,
 						  config.INPUT_IMAGE_WIDTH)),
 			       transforms.ToTensor()])
+
+transforms_mask = transforms.Compose([transforms.ToPILImage(),
+			       transforms.Resize((config.INPUT_IMAGE_HEIGHT,
+						  config.INPUT_IMAGE_WIDTH)),
+			       transforms.PILToTensor()])
 
 # create the datasets
 if os.path.exists('PickleDumps/train_pickle'):
@@ -71,8 +78,8 @@ valLoader = DataLoader(valDS, shuffle=False,
 unet = FloodNet().to(config.DEVICE)
 
 # initialize loss function and optimizer
-##lossFunc = 
-##opt = 
+lossFunc = CrossEntropyLoss()
+opt = Adam(unet.parameters(), lr=config.INIT_LR)
 
 # calculate steps per epoch for training and test set
 trainSteps = len(trainDS) // config.BATCH_SIZE
@@ -80,7 +87,7 @@ testSteps = len(testDS) // config.BATCH_SIZE
 valSteps = len(valDS) // config.BATCH_SIZE
 
 # initialize a dictionary to store training history
-H = {"train_loss": [], "val_loss":[]}
+H = {"train_loss": [], "val_loss":[], "train_acc": [], "val_acc": []}
 
 # loop over epochs
 print("[INFO] training the network...")
@@ -94,25 +101,33 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 	# initialize the total training and validation loss
 	totalTrainLoss = 0
 	totalValLoss = 0
+	totalTrainAccuracy = 0
+	totalValAccuracy = 0
 	
 	# loop over the training set
 	for (x, y) in trainLoader:
-		print("test1")
 		# send the input to the device
 		(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
 		# preform a forward pass and calculate the training loss
 		pred = unet(x)
-		##loss = lossFunc(pred, y)
+		y_squeeze = torch.squeeze(y)
+		loss = lossFunc(pred, y_squeeze)
+		# calculate training pixel accuracy
+		_, class_preds = torch.max(pred, 1)
+		correct_tensor = class_preds.eq(y_squeeze.data.view_as(class_preds))
+		total_correct = np.sum(correct_tensor.cpu().numpy())
+		totalTrainAccuracy += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE)
 
 		# first, zero out any previously accumulated gradients, then
 		# preform backproagation, and then update model parameters
-		##opt.zero_grad()
-		##loss.backward()
-		##opt.step()
+		opt.zero_grad()
+		loss.backward()
+		opt.step()
 
 		# add teh loss to the total training loss so far
-		##totalTrainLoss += loss
+		totalTrainLoss += loss
+
 
 	# switch off autograd
 	with torch.no_grad():
@@ -121,28 +136,41 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 
 		# loop over the validation set
 		for (x, y) in valLoader:
-			print("test2")
 			# send the input to the device
 			(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
 			# make the predictions and calculate the validation loss
 			pred = unet(x)
-			##totalValLoss += lossFunc(pred, y)
+			y_squeeze = torch.squeeze(y)
+			totalValLoss += lossFunc(pred, y_squeeze)
+
+			_, class_preds = torch.max(pred, 1)
+			correct_tensor = class_preds.eq(y_squeeze.data.view_as(class_preds))
+			total_correct = np.sum(correct_tensor.cpu().numpy())
+			totalValAccuracy += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE)
 
 	# calculate teh average training and validation loss
 	avgTrainLoss = totalTrainLoss / trainSteps
-	avgValLoss = totalValLoss / testSteps
+	avgValLoss = totalValLoss / valSteps
+	avgTrainAccuracy = totalTrainAccuracy / trainSteps
+	avgValAccuracy = totalValAccuracy / valSteps
 
 	# update our training history
 	H["train_loss"].append(avgTrainLoss.cpu().detach().numpy())
 	H["val_loss"].append(avgValLoss.cpu().detach().numpy())
+	H["train_acc"].append(avgTrainAccuracy.cpu().detach().numpy())
+	H["val_acc"].append(avgValAccuracy.cpu().detach().numpy())
 
 	# print the model training and calidation information
 	print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
 	print("Train loss: {:.6f}, Val loss: {:.4f}".format(
 		avgTrainLoss, avgValLoss))
+	print("Train acc: {:.6f}, Val acc: {:.4f}".format(
+		avgTrainAccuracy, avgValAccuracy))
 
 # display the total time needed to preform the training
 endTime = time.time()
 print("[INFO] total time taken to train the model: {:.2f}s".format(
 	endTime-startTime))
+
+torch.save(unet, config.MODEL_PATH)
