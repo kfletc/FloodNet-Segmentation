@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import torch
 import time
 import os
+import pickle
 
 # load the image and mask filepaths
 train_imagePaths = sorted(list(paths.list_images(config.IMAGE_TRAIN_DATASET_PATH)))
@@ -27,12 +28,27 @@ transforms = transforms.Compose([transforms.ToPILImage(),
 			       transforms.ToTensor()])
 
 # create the datasets
-trainDS = FloodDataset(imagePaths=train_imagePaths, maskPaths=train_maskPaths,
-		       transforms=transforms)
-testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
-		      transforms=transforms)
-valDS = FloodDataset(imagePaths=val_imagePaths, maskPaths=val_maskPaths,
-		     transforms=transforms)
+if os.path.exists('PickleDumps/train_pickle'):
+	pickle_file = open('PickleDumps/train_pickle', 'rb')
+	trainDS = pickle.load(pickle_file)
+	pickle_file.close()
+else:
+	trainDS = FloodDataset(imagePaths=train_imagePaths, maskPaths=train_maskPaths,
+				   		transforms=transforms)
+if os.path.exists('PickleDumps/test_pickle'):
+	pickle_file = open('PickleDumps/test_pickle', 'rb')
+	testDS = pickle.load(pickle_file)
+	pickle_file.close()
+else:
+	testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
+		      			transforms=transforms)
+if os.path.exists('PickleDumps/val_pickle'):
+	pickle_file = open('PickleDumps/val_pickle', 'rb')
+	valDS = pickle.load(pickle_file)
+	pickle_file.close()
+else:
+	valDS = FloodDataset(imagePaths=val_imagePaths, maskPaths=val_maskPaths,
+		     			transforms=transforms)
 
 print(f"[INFO] found {len(trainDS)} examples in the training set...")
 print(f"[INFO] found {len(testDS)} examples in the test set...")
