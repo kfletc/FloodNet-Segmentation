@@ -160,4 +160,4 @@ cython_debug/
 #.idea/
 
 FloodNet-Supervised_v1.0
-
+PickleDumps
