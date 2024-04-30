@@ -158,8 +158,8 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 	# update our training history
 	H["train_loss"].append(avgTrainLoss.cpu().detach().numpy())
 	H["val_loss"].append(avgValLoss.cpu().detach().numpy())
-	H["train_acc"].append(avgTrainAccuracy.cpu().detach().numpy())
-	H["val_acc"].append(avgValAccuracy.cpu().detach().numpy())
+	H["train_acc"].append(avgTrainAccuracy)
+	H["val_acc"].append(avgValAccuracy)
 
 	# print the model training and calidation information
 	print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))

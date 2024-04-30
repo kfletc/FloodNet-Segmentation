@@ -62,7 +62,7 @@ testLoader = DataLoader(testDS, shuffle=RANDOM_TESTS,
 			 num_workers=0)
 
 print("[INFO] load up model...")
-##unet = torch.load(config.MODEL_PATH).to(config.DEVICE)
+unet = torch.load(config.MODEL_PATH).to(config.DEVICE)
 
 
 # images to save for plot
@@ -74,9 +74,8 @@ for (i, (x, y)) in tqdm(enumerate(testLoader)):
 	# send the input to the device
 	(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
-	##pred = unet(x)
-	##pimg = pred.squeeze()
-	##pimg = pimg.cpu().numpy()
+	pred = unet(x)
+	
 
 	# generate plots for first batch
 	if i == 0:
@@ -89,17 +88,23 @@ for (i, (x, y)) in tqdm(enumerate(testLoader)):
 
 		for j in tqdm(range(numViz)):
 			print(j)
+			pimg = pred.squeeze()
+			pimg = pimg.cpu().detach().numpy()
 			ximg = x.squeeze()
 			yimg = y.squeeze()
 			ximg = ximg.cpu().numpy()
 			yimg = yimg.cpu().numpy()
 			ximg = ximg[j,:,:,:]
 			yimg = yimg[j,:,:]
+			print(pimg.shape)
+			pimg = pimg[j,:,:,:]
 			ximg = np.transpose(ximg, (1, 2, 0))
+			pimg = np.transpose(pimg, (1, 2, 0))
+			pimg = pimg[:,:,0]
 			
 			ximgs.append(ximg)
 			yimgs.append(yimg)
-			pimgs.append(yimg)
+			pimgs.append(pimg)
 	
 prepare_plot(ximgs, yimgs, pimgs)	
 	
