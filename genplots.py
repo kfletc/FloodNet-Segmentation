@@ -1,6 +1,4 @@
 # import the nexessary packages
-from torch.nn import CrossEntropyLoss
-
 import config
 from dataset import FloodDataset
 import matplotlib.pyplot as plt
@@ -38,9 +36,6 @@ def prepare_plot(origImage, origMask, predMask):
 	figure.show()
 
 
-
-
-
 if os.path.exists('PickleDumps/test_pickle'):
 	pickle_file = open('PickleDumps/test_pickle', 'rb')
 	testDS = pickle.load(pickle_file)
@@ -74,82 +69,41 @@ ximgs = []
 yimgs = []
 pimgs = []
 
-# results from test data
-classes = ['Background', 'Building Flooded', 'Building Non-Flooded', 'Road Flooded', 'Road Non-Flooded',
-		   'Water', 'Tree', 'Vehicle', 'Pool', 'Grass']
 
-testSteps = len(testDS) // config.BATCH_SIZE
-lossFunc = CrossEntropyLoss()
-totalTestLoss = 0
-totalTestAcc = 0
-class_correct = list(0. for i in range(10))
-class_total = list(0. for i in range(10))
 
-i = 0
+
 for x, y in tqdm(testLoader):
 	# send the input to the device
 	(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
 	pred = unet(x)
-	y_squeeze = torch.squeeze(y)
-	loss = lossFunc(pred, y_squeeze)
-	totalTestLoss += loss
-	# calculate pixel accuracy
-	_, class_preds = torch.max(pred, 1)
-	y_preds = y_squeeze.data.view_as(class_preds)
-	y_preds_cpu = y_preds.cpu()
-	correct_tensor = class_preds.eq(y_preds)
-	correct = correct_tensor.cpu().numpy()
-	total_correct = np.sum(correct)
-	totalTestAcc += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE) * 100.0
-	for b in range(config.BATCH_SIZE):
-		for c, x_data in enumerate(y_preds_cpu[b]):
-			for d, xy_data in enumerate(x_data):
-				label = xy_data.data
-				class_correct[label] += correct[b][c][d].item()
-				class_total[label] += 1
+	
+	# get number of plots to make
+	numViz = 0
+	if NUMBER_OF_PLOTS < config.BATCH_SIZE:
+		numViz = NUMBER_OF_PLOTS
+	else:
+		numViz = config.BATCH_SIZE
 
-	# generate plots for first batch
-	if i == 0:
-		# get number of plots to make
-		numViz = 0
-		if NUMBER_OF_PLOTS < config.BATCH_SIZE:
-			numViz = NUMBER_OF_PLOTS
-		else:
-			numViz = config.BATCH_SIZE
+	for j in tqdm(range(numViz)):
+		print(j)
+		pimg = pred.squeeze()
+		pimg = pimg.cpu().detach().numpy()
+		ximg = x.squeeze()
+		yimg = y.squeeze()
+		ximg = ximg.cpu().numpy()
+		yimg = yimg.cpu().numpy()
+		ximg = ximg[j, :, :, :]
+		yimg = yimg[j, :, :]
+		print(pimg.shape)
+		pimg = pimg[j, :, :, :]
+		ximg = np.transpose(ximg, (1, 2, 0))
+		pimg = np.transpose(pimg, (1, 2, 0))
+		pimg = pimg[:, :, 0]
 
-		for j in tqdm(range(numViz)):
-			print(j)
-			pimg = pred.squeeze()
-			pimg = pimg.cpu().detach().numpy()
-			ximg = x.squeeze()
-			yimg = y.squeeze()
-			ximg = ximg.cpu().numpy()
-			yimg = yimg.cpu().numpy()
-			ximg = ximg[j, :, :, :]
-			yimg = yimg[j, :, :]
-			print(pimg.shape)
-			pimg = pimg[j, :, :, :]
-			ximg = np.transpose(ximg, (1, 2, 0))
-			pimg = np.transpose(pimg, (1, 2, 0))
-			pimg = pimg[:, :, 0]
-
-			ximgs.append(ximg)
-			yimgs.append(yimg)
-			pimgs.append(pimg)
-
-	i += 1
+		ximgs.append(ximg)
+		yimgs.append(yimg)
+		pimgs.append(pimg)
+	break
 
 prepare_plot(ximgs, yimgs, pimgs)
-
-avgTestLoss = totalTestLoss / testSteps
-avgTestAcc = totalTestAcc / testSteps
-print("Test loss: {:.6f}".format(avgTestLoss))
-print("Test acc: {:.6f}".format(avgTestAcc))
-
-for i in range(10):
-	if class_total[i] > 0:
-		print('Test Accuracy of %5s: %2d%%' % (
-			classes[i], 100 * class_correct[i] / class_total[i]))
-	else:
-		print('Test Accuracy of %5s: N/A (no training examples)' % (classes[i]))
