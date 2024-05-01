@@ -51,4 +51,4 @@ BASE_OUTPUT = "output"
 MODEL_PATH = os.path.join(BASE_OUTPUT, "unet_tgs_salt.pth")
 LOSS_PLOT_PATH = os.path.sep.join([BASE_OUTPUT, "loss_plot.png"])
 ACC_PLOT_PATH = os.path.sep.join([BASE_OUTPUT, "acc_plot.png"])
-TEST_PATHS = os.path.sep.join([BASE_OUTPUT, "test_paths.txt"])
+IMAGE_EX_PATH = os.path.sep.join([BASE_OUTPUT, "test_images.png"])
