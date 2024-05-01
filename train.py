@@ -217,3 +217,5 @@ plt.xlabel("epoch #")
 plt.ylabel("Accuracy (%)")
 plt.legend(loc="lower left")
 plt.savefig(config.ACC_PLOT_PATH)
+
+k=input("Press close to exit")

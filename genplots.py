@@ -114,3 +114,5 @@ for x, y in tqdm(testLoader):
 	break
 
 prepare_plot(ximgs, yimgs, pimgs)
+
+k=input("Press close to exit")
