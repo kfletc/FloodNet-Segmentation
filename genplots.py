@@ -45,15 +45,15 @@ else:
 	test_maskPaths = sorted(list(paths.list_images(config.MASK_TEST_DATASET_PATH)))
 	# define transformations
 	transforms_image = transforms.Compose([transforms.ToPILImage(),
-                                               transforms.Resize((config.INPUT_IMAGE_HEIGHT, config.INPUT_IMAGE_WIDTH)),
-                                               transforms.ToTensor()])
+					       transforms.Resize((config.INPUT_IMAGE_HEIGHT, config.INPUT_IMAGE_WIDTH)),
+					       transforms.ToTensor()])
 
 	transforms_mask = transforms.Compose([transforms.ToPILImage(),
-                                              transforms.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
-                                              transforms.PILToTensor()])
+					      transforms.Resize((config.INPUT_IMAGE_HEIGHT,config.INPUT_IMAGE_WIDTH)),
+					      transforms.PILToTensor()])
 
 	testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
-                              transforms=transforms_image, transforms_mask=transforms_mask)
+			      transforms=transforms_image, transforms_mask=transforms_mask)
 
 print(f"[INFO] found {len(testDS)} examples in the test set...")
 
@@ -85,21 +85,28 @@ for x, y in tqdm(testLoader):
 	else:
 		numViz = config.BATCH_SIZE
 
+	# get numpy arrays batch from tensor
+	pimgb = pred.squeeze()
+	ximgb = x.squeeze()
+	yimgb = y.squeeze()
+	ximgb = ximgb.cpu().numpy()
+	yimgb = yimgb.cpu().numpy()
+	pimgb = pimgb.cpu().detach().numpy()
+
 	for j in tqdm(range(numViz)):
-		print(j)
-		pimg = pred.squeeze()
-		pimg = pimg.cpu().detach().numpy()
-		ximg = x.squeeze()
-		yimg = y.squeeze()
-		ximg = ximg.cpu().numpy()
-		yimg = yimg.cpu().numpy()
-		ximg = ximg[j, :, :, :]
-		yimg = yimg[j, :, :]
-		print(pimg.shape)
-		pimg = pimg[j, :, :, :]
+		# get single image from batch
+		ximg = ximgb[j, :, :, :]
+		yimg = yimgb[j, :, :]
+		pimg = pimgb[j, :, :, :]
+
+		# reorder to width, hight, channels
 		ximg = np.transpose(ximg, (1, 2, 0))
 		pimg = np.transpose(pimg, (1, 2, 0))
-		pimg = pimg[:, :, 0]
+
+		# get the max of the 10 channels to reshape to 2d array
+		pimg = np.argmax(pimg, axis=2)
+
+		
 
 		ximgs.append(ximg)
 		yimgs.append(yimg)
