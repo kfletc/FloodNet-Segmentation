@@ -43,6 +43,9 @@ if os.path.exists('PickleDumps/train_pickle'):
 else:
 	trainDS = FloodDataset(imagePaths=train_imagePaths, maskPaths=train_maskPaths,
 				   		transforms=transforms_image, transforms_mask=transforms_mask)
+	with open('PickleDumps/train_pickle', 'wb') as train_file:
+		pickle.dump(trainDS, train_file)
+
 if os.path.exists('PickleDumps/test_pickle'):
 	pickle_file = open('PickleDumps/test_pickle', 'rb')
 	testDS = pickle.load(pickle_file)
@@ -50,6 +53,9 @@ if os.path.exists('PickleDumps/test_pickle'):
 else:
 	testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
 		      			transforms=transforms_image, transforms_mask=transforms_mask)
+	with open('PickleDumps/test_pickle', 'wb') as test_file:
+		pickle.dump(testDS, test_file)
+
 if os.path.exists('PickleDumps/val_pickle'):
 	pickle_file = open('PickleDumps/val_pickle', 'rb')
 	valDS = pickle.load(pickle_file)
@@ -57,6 +63,8 @@ if os.path.exists('PickleDumps/val_pickle'):
 else:
 	valDS = FloodDataset(imagePaths=val_imagePaths, maskPaths=val_maskPaths,
 		     			transforms=transforms_image, transforms_mask=transforms_mask)
+	with open('PickleDumps/val_pickle', 'wb') as val_file:
+		pickle.dump(valDS, val_file)
 
 print(f"[INFO] found {len(trainDS)} examples in the training set...")
 print(f"[INFO] found {len(testDS)} examples in the test set...")

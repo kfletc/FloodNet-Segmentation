@@ -26,15 +26,15 @@ class FloodNet(nn.Module):
         self.out_size = out_size
 
         # blocks of encoder convolutional layers
-        self.enc_blocks = nn.ModuleList([Block(3, 32), Block(32, 64), Block(64, 128), Block(128, 256)])
+        self.enc_blocks = nn.ModuleList([Block(3, 32), Block(32, 64), Block(64, 128), Block(128, 256), Block(256, 512)])
         # blocks of decoder convolutional layers
-        self.dec_blocks = nn.ModuleList([Block(256, 128), Block(128, 64), Block(64, 32)])
+        self.dec_blocks = nn.ModuleList([Block(512, 256), Block(256, 128), Block(128, 64), Block(64, 32)])
 
         # pooling layer
         self.pool = nn.MaxPool2d(2)
         # upsample layers
-        self.upconvs = nn.ModuleList([nn.ConvTranspose2d(256, 128, 2, 2), nn.ConvTranspose2d(128, 64, 2, 2),
-                                      nn.ConvTranspose2d(64, 32, 2, 2)])
+        self.upconvs = nn.ModuleList([nn.ConvTranspose2d(512, 256, 2, 2), nn.ConvTranspose2d(256, 128, 2, 2),
+                                      nn.ConvTranspose2d(128, 64, 2, 2), nn.ConvTranspose2d(64, 32, 2, 2)])
         # final layer
         self.head = nn.Conv2d(32, num_classes, 1, padding='same')
 
@@ -47,16 +47,21 @@ class FloodNet(nn.Module):
         encode_layer_3 = self.enc_blocks[2](after_pool)
         after_pool = self.pool(encode_layer_3)
         encode_layer_4 = self.enc_blocks[3](after_pool)
-        upsample = self.upconvs[0](encode_layer_4)
-        skip_connection_1 = torch.cat([upsample, encode_layer_3], dim=1)
+        after_pool = self.pool(encode_layer_4)
+        encode_layer_5 = self.enc_blocks[4](after_pool)
+        upsample = self.upconvs[0](encode_layer_5)
+        skip_connection_1 = torch.cat([upsample, encode_layer_4], dim=1)
         decode_layer_1 = self.dec_blocks[0](skip_connection_1)
         upsample = self.upconvs[1](decode_layer_1)
-        skip_connection_2 = torch.cat([upsample, encode_layer_2], dim=1)
+        skip_connection_2 = torch.cat([upsample, encode_layer_3], dim=1)
         decode_layer_2 = self.dec_blocks[1](skip_connection_2)
         upsample = self.upconvs[2](decode_layer_2)
-        skip_connection_3 = torch.cat([upsample, encode_layer_1], dim=1)
+        skip_connection_3 = torch.cat([upsample, encode_layer_2], dim=1)
         decode_layer_3 = self.dec_blocks[2](skip_connection_3)
-        output_map = self.head(decode_layer_3)
+        upsample = self.upconvs[3](decode_layer_3)
+        skip_connection_4 = torch.cat([upsample, encode_layer_1], dim=1)
+        decode_layer_4 = self.dec_blocks[3](skip_connection_4)
+        output_map = self.head(decode_layer_4)
 
         # for sanity resizes to input size
         if self.retain_dim:
