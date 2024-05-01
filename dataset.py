@@ -1,6 +1,5 @@
 # import the necessary packages
 from torch.utils.data import Dataset
-from torch import Tensor
 import torch
 import cv2
 from tqdm.auto import tqdm

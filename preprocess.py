@@ -1,10 +1,7 @@
 from dataset import FloodDataset
 import config
-from torch.utils.data import DataLoader
 from torchvision import transforms
 from imutils import paths
-from tqdm import tqdm
-import torch
 import pickle
 
 # load the image and mask filepaths

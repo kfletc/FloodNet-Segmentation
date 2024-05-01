@@ -42,21 +42,21 @@ if os.path.exists('PickleDumps/train_pickle'):
 	pickle_file.close()
 else:
 	trainDS = FloodDataset(imagePaths=train_imagePaths, maskPaths=train_maskPaths,
-				   		transforms=transforms)
+				   		transforms=transforms_image, transforms_mask=transforms_mask)
 if os.path.exists('PickleDumps/test_pickle'):
 	pickle_file = open('PickleDumps/test_pickle', 'rb')
 	testDS = pickle.load(pickle_file)
 	pickle_file.close()
 else:
 	testDS = FloodDataset(imagePaths=test_imagePaths, maskPaths=test_maskPaths,
-		      			transforms=transforms)
+		      			transforms=transforms_image, transforms_mask=transforms_mask)
 if os.path.exists('PickleDumps/val_pickle'):
 	pickle_file = open('PickleDumps/val_pickle', 'rb')
 	valDS = pickle.load(pickle_file)
 	pickle_file.close()
 else:
 	valDS = FloodDataset(imagePaths=val_imagePaths, maskPaths=val_maskPaths,
-		     			transforms=transforms)
+		     			transforms=transforms_image, transforms_mask=transforms_mask)
 
 print(f"[INFO] found {len(trainDS)} examples in the training set...")
 print(f"[INFO] found {len(testDS)} examples in the test set...")
@@ -86,13 +86,18 @@ trainSteps = len(trainDS) // config.BATCH_SIZE
 testSteps = len(testDS) // config.BATCH_SIZE
 valSteps = len(valDS) // config.BATCH_SIZE
 
+# keep track of when validation loss stagnates
+lowestValLoss = np.Inf
+failed_epochs = 0
+
+
 # initialize a dictionary to store training history
-H = {"train_loss": [], "val_loss":[], "train_acc": [], "val_acc": []}
+H = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
 
 # loop over epochs
 print("[INFO] training the network...")
 startTime = time.time()
-for e in tqdm(range(config.NUM_EPOCHS)):
+for e in tqdm(range(config.MAX_EPOCHS)):
 	print(f"[INFO] starting epochs {e}")
 
 	# set the model in training mode
@@ -117,7 +122,7 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 		_, class_preds = torch.max(pred, 1)
 		correct_tensor = class_preds.eq(y_squeeze.data.view_as(class_preds))
 		total_correct = np.sum(correct_tensor.cpu().numpy())
-		totalTrainAccuracy += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE)
+		totalTrainAccuracy += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE) * 100.0
 
 		# first, zero out any previously accumulated gradients, then
 		# preform backproagation, and then update model parameters
@@ -127,7 +132,6 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 
 		# add teh loss to the total training loss so far
 		totalTrainLoss += loss
-
 
 	# switch off autograd
 	with torch.no_grad():
@@ -147,7 +151,7 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 			_, class_preds = torch.max(pred, 1)
 			correct_tensor = class_preds.eq(y_squeeze.data.view_as(class_preds))
 			total_correct = np.sum(correct_tensor.cpu().numpy())
-			totalValAccuracy += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE)
+			totalValAccuracy += total_correct / (config.INPUT_IMAGE_WIDTH * config.INPUT_IMAGE_HEIGHT * config.BATCH_SIZE) * 100.0
 
 	# calculate teh average training and validation loss
 	avgTrainLoss = totalTrainLoss / trainSteps
@@ -162,15 +166,46 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 	H["val_acc"].append(avgValAccuracy)
 
 	# print the model training and calidation information
-	print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
+	print("[INFO] EPOCH: {}/{}".format(e + 1, config.MAX_EPOCHS))
 	print("Train loss: {:.6f}, Val loss: {:.4f}".format(
 		avgTrainLoss, avgValLoss))
 	print("Train acc: {:.6f}, Val acc: {:.4f}".format(
 		avgTrainAccuracy, avgValAccuracy))
+
+	if avgValLoss <= lowestValLoss:
+		lowestValLoss = avgValLoss
+		failed_epochs = 0
+		torch.save(unet, config.MODEL_PATH)
+	else:
+		failed_epochs += 1
+		print("Validation Loss increased from lass epoch.\t# of failed epochs: {}".format(failed_epochs))
+
+	if failed_epochs >= config.FAILED_BATCH_NUM:
+		print("Validation Loss increased for {} epochs. \nEnding training and saving model.".format(failed_epochs))
+		break
 
 # display the total time needed to preform the training
 endTime = time.time()
 print("[INFO] total time taken to train the model: {:.2f}s".format(
 	endTime-startTime))
 
-torch.save(unet, config.MODEL_PATH)
+plt.style.use("ggplot")
+plt.figure()
+plt.plot(H["train_loss"], label="train loss")
+plt.plot(H["val_loss"], label="validation loss")
+plt.title("Training Loss on Dataset")
+plt.xlabel("epoch #")
+plt.ylabel("Loss")
+plt.legend(loc="lower left")
+plt.savefig(config.LOSS_PLOT_PATH)
+
+plt.clf()
+plt.style.use("ggplot")
+plt.figure()
+plt.plot(H["train_acc"], label="train accuracy")
+plt.plot(H["val_acc"], label="validation accuracy")
+plt.title("Training Accuracy on Dataset")
+plt.xlabel("epoch #")
+plt.ylabel("Accuracy (%)")
+plt.legend(loc="lower left")
+plt.savefig(config.ACC_PLOT_PATH)

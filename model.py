@@ -26,17 +26,17 @@ class FloodNet(nn.Module):
         self.out_size = out_size
 
         # blocks of encoder convolutional layers
-        self.enc_blocks = nn.ModuleList([Block(3, 16), Block(16, 32), Block(32, 64), Block(64, 128)])
+        self.enc_blocks = nn.ModuleList([Block(3, 32), Block(32, 64), Block(64, 128), Block(128, 256)])
         # blocks of decoder convolutional layers
-        self.dec_blocks = nn.ModuleList([Block(128, 64), Block(64, 32), Block(32, 16)])
+        self.dec_blocks = nn.ModuleList([Block(256, 128), Block(128, 64), Block(64, 32)])
 
         # pooling layer
         self.pool = nn.MaxPool2d(2)
         # upsample layers
-        self.upconvs = nn.ModuleList([nn.ConvTranspose2d(128, 64, 2, 2), nn.ConvTranspose2d(64, 32, 2, 2),
-                                      nn.ConvTranspose2d(32, 16, 2, 2)])
+        self.upconvs = nn.ModuleList([nn.ConvTranspose2d(256, 128, 2, 2), nn.ConvTranspose2d(128, 64, 2, 2),
+                                      nn.ConvTranspose2d(64, 32, 2, 2)])
         # final layer
-        self.head = nn.Conv2d(16, num_classes, 1, padding='same')
+        self.head = nn.Conv2d(32, num_classes, 1, padding='same')
 
     def forward(self, x):
         # foward pass of entire network
