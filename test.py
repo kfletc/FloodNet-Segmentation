@@ -12,8 +12,8 @@ import pickle
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-if os.path.exists('PickleDumps/test_pickle'):
-    pickle_file = open('PickleDumps/test_pickle', 'rb')
+if os.path.exists('PickleDumps/test_pickle.pickle'):
+    pickle_file = open('PickleDumps/test_pickle.pickle', 'rb')
     testDS = pickle.load(pickle_file)
     pickle_file.close()
 else:
