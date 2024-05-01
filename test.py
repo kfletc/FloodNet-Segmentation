@@ -86,3 +86,5 @@ for i in range(10):
             classes[i], 100 * class_correct[i] / class_total[i]))
     else:
         print('Test Accuracy of %5s: N/A (no training examples)' % (classes[i]))
+
+k=input("Press close to exit")
