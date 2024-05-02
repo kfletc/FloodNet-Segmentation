@@ -110,4 +110,4 @@ for x, y in tqdm(testLoader):
 prepare_plot(ximgs, yimgs, pimgs)
 plt.savefig(config.IMAGE_EX_PATH)
 
-k=input("Press close to exit")
+k = input("Press close to exit")
